@@ -1,7 +1,7 @@
 SHELL=cmd
 GOSTRIPE_PORT=4000
 API_PORT=4001
-DSN="root@(localhost:3306)/widgets?parseTime=true&tls=false"
+DSN="syamcode@(localhost:3306)/widgets?parseTime=true&tls=false"
 
 ## build: builds all binaries
 build: clean build_front build_back
