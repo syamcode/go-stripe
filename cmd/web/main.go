@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/gob"
 	"flag"
 	"fmt"
 	"html/template"
@@ -64,6 +65,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	gob.Register(map[string]interface{}{})
 	var cfg config
 
 	flag.IntVar(&cfg.port, "port", 4000, "Server port to listen on")
