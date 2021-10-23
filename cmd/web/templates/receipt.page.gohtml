@@ -13,7 +13,7 @@
     <p>Email: {{$txn.Email}}<p>
     <p>Payment Method: {{$txn.PaymentMethodID}}<p>
     <p>Payment Amount: {{$txn.PaymentAmount}}<p>
-    <p>Currency: {{$txn.PaymentCurrency}}<p>
+    <p>Currency: {{formatCurrency $txn.PaymentCurrency}}<p>
     <p>Last Four: {{$txn.LastFour}}<p>
     <p>Bank Return Code: {{$txn.BankReturnCode}}<p>
     <p>Expiry Date: {{$txn.ExpiryMonth}}/{{$txn.ExpiryYear}}<p>

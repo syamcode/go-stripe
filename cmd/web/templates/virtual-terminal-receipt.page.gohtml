@@ -12,7 +12,7 @@
     <p>Customer Name: {{$txn.FirstName}} {{$txn.LastName}}<p>
     <p>Email: {{$txn.Email}}<p>
     <p>Payment Method: {{$txn.PaymentMethodID}}<p>
-    <p>Payment Amount: {{$txn.PaymentAmount}}<p>
+    <p>Payment Amount: {{formatCurrency $txn.PaymentAmount}}<p>
     <p>Currency: {{$txn.PaymentCurrency}}<p>
     <p>Last Four: {{$txn.LastFour}}<p>
     <p>Bank Return Code: {{$txn.BankReturnCode}}<p>
