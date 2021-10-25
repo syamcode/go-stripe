@@ -161,8 +161,13 @@
             .then(data => {
                 console.log(data);
                 processing.classList.add("d-none");
-                // set hidden vars
-                // submit the form
+                showCardSuccess();
+                sessionStorage.first_name = payload.first_name;
+                sessionStorage.last_name = payload.last_name;
+                sessionStorage.amount = {{formatCurrency $widget.Price}};
+                sessionStorage.last_four = payload.last_four;
+
+                location.href = "/receipt/bronze"
             })
         }
     }
