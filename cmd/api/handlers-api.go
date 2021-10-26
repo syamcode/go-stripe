@@ -293,7 +293,7 @@ func (app *application) CreateAuthToken(w http.ResponseWriter, r *http.Request) 
 		Token   *models.Token `json:"authentication_token"`
 	}
 
-	payload.Error = true
+	payload.Error = false
 	payload.Message = fmt.Sprintf("token for %s created", user.Email)
 	payload.Token = token
 
