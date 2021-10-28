@@ -58,6 +58,7 @@
 
 {{define "js"}}
 <script>
+    checkAuth();
     document.getElementById("charge_amount").addEventListener('input', function(evt) {
         if (evt.target.value !== "") {
             document.getElementById("amount").value = parseInt(evt.target.value * 100);
