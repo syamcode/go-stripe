@@ -32,6 +32,8 @@ type config struct {
 		username string
 		password string
 	}
+	secretkey string
+	frontend  string
 }
 
 type application struct {
@@ -68,6 +70,7 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 4001, "Server port to listen on")
 	flag.StringVar(&cfg.env, "env", "development", "Application environment {development|production|maintenance}")
 	flag.StringVar(&cfg.db.dsn, "dsn", "syamcode@tcp(localhost:3306)/widgets?parseTime=true&tls=false", "DSN")
+	flag.StringVar(&cfg.frontend, "frontend", "http://localhost:4000", "url to frontend")
 
 	flag.Parse()
 
@@ -77,6 +80,7 @@ func main() {
 	cfg.smtp.port, _ = strconv.Atoi(os.Getenv("SMTP_PORT"))
 	cfg.smtp.username = os.Getenv("SMTP_USERNAME")
 	cfg.smtp.password = os.Getenv("SMTP_PASSWORD")
+	cfg.secretkey = os.Getenv("SECRET_KEY")
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
