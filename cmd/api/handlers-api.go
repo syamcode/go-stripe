@@ -14,6 +14,7 @@ import (
 	"github.com/syamcode/go-stripe/internal/cards"
 	"github.com/syamcode/go-stripe/internal/models"
 	"github.com/syamcode/go-stripe/internal/urlsigner"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type stripePayload struct {
@@ -462,6 +463,47 @@ func (app *application) SendPasswordResetEmail(w http.ResponseWriter, r *http.Re
 
 	resp.Error = false
 	resp.Message = "reset password link sent"
+
+	app.writeJSON(w, http.StatusCreated, resp)
+}
+
+func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	err := app.readJSON(w, r, &payload)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	user, err := app.DB.GetUserByEmail(payload.Email)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	newHash, err := bcrypt.GenerateFromPassword([]byte(payload.Password), 12)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	err = app.DB.UpdatePasswordForUser(user, string(newHash))
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	var resp struct {
+		Error   bool   `json:"error"`
+		Message string `json:"message"`
+	}
+
+	resp.Error = false
+	resp.Message = "Password changed"
 
 	app.writeJSON(w, http.StatusCreated, resp)
 }
