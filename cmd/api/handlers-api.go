@@ -13,6 +13,7 @@ import (
 	"github.com/stripe/stripe-go/v72"
 	"github.com/syamcode/go-stripe/internal/cards"
 	"github.com/syamcode/go-stripe/internal/models"
+	"github.com/syamcode/go-stripe/internal/urlsigner"
 )
 
 type stripePayload struct {
@@ -421,14 +422,33 @@ func (app *application) SendPasswordResetEmail(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// verify that email exists
+	_, err = app.DB.GetUserByEmail(payload.Email)
+	if err != nil {
+		var resp struct {
+			Error   bool   `json:"error"`
+			Message string `json:"message"`
+		}
+		resp.Error = true
+		resp.Message = "No matching email found on our system"
+		app.writeJSON(w, http.StatusAccepted, resp)
+		return
+	}
+
+	link := fmt.Sprintf("%s/reset-password?email=%s", app.config.frontend, payload.Email)
+
+	sign := urlsigner.Signer{
+		SecretKey: []byte(app.config.secretkey),
+	}
+
 	var data struct {
 		Link string
 	}
 
-	data.Link = "http://google.com"
+	data.Link = sign.GenerateTokenFromString(link)
 
 	// send mail
-	err = app.SendMail("info@widgets.com", "info@widgets.com", "Password Reset Request", "password-reset", data)
+	err = app.SendMail("info@widgets.com", payload.Email, "Password Reset Request", "password-reset", data)
 	if err != nil {
 		app.errorLog.Println(err)
 		app.badRequest(w, r, err)
