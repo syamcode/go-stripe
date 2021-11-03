@@ -18,6 +18,7 @@ func (app *application) routes() http.Handler {
 		mux.Get("/sales", app.SalesPage)
 		mux.Get("/subscriptions", app.SubscriptionsPage)
 		mux.Get("/sales/{id}", app.ViewSalePage)
+		mux.Get("/subscriptions/{id}", app.ViewSubscriptionPage)
 	})
 
 	mux.Post("/payment-succeeded", app.PaymentSucceeded)

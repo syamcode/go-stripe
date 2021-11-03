@@ -383,12 +383,26 @@ func (app *application) SubscriptionsPage(w http.ResponseWriter, r *http.Request
 
 func (app *application) ViewSalePage(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	saleID, _ := strconv.Atoi(id)
+	orderID, _ := strconv.Atoi(id)
 
 	intMap := make(map[string]int)
-	intMap["id"] = saleID
+	intMap["id"] = orderID
 
 	if err := app.renderTemplate(w, r, "sale", &templateData{
+		IntMap: intMap,
+	}); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
+func (app *application) ViewSubscriptionPage(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	orderID, _ := strconv.Atoi(id)
+
+	intMap := make(map[string]int)
+	intMap["id"] = orderID
+
+	if err := app.renderTemplate(w, r, "subscription", &templateData{
 		IntMap: intMap,
 	}); err != nil {
 		app.errorLog.Println(err)

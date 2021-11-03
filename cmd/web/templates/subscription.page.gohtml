@@ -1,0 +1,53 @@
+{{template "base" .}}
+
+{{define "title"}}
+    Subscription
+{{end}}
+
+{{define "content"}}
+    <h2 class="mt-3 text-center">Subscription</h2>
+    <hr>
+    <p>Order No: <span id="order-no"></span><p>
+    <p>Customer Name: <span id="customer"></span><p>
+    <p>Product Name: <span id="product"></span><p>
+    <p>Quantity: <span id="quantity"></span><p>
+    <p>Amount: <span id="amount"></span><p>
+    <hr>
+    <a class="btn btn-info" href="/admin/subscriptions">Cancel</a>
+    <a class="btn btn-warning" href="#!">Refund Order</a>
+{{end}}
+
+{{define "js"}}
+    <script>
+        let token = localStorage.getItem("token");
+
+        const requestOptions = {
+            method: 'get',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+            }
+        }
+
+        fetch('{{.API}}/api/admin/subscriptions/{{index .IntMap "id"}}', requestOptions)
+        .then(response => response.json())
+        .then(data => {
+            if (data) {
+                document.getElementById("order-no").innerHTML = data.id;
+                document.getElementById("customer").innerHTML = data.customer.first_name + " " + data.customer.last_name;
+                document.getElementById("product").innerHTML = data.widget.name;
+                document.getElementById("quantity").innerHTML = data.quantity;
+                document.getElementById("amount").innerHTML = formatCurrency(data.amount);
+            }
+        })
+
+        function formatCurrency(amount) {
+            let c = parseFloat(amount/100);
+            return c.toLocaleString("en-us", {
+                style: "currency",
+                currency: "USD",
+            })
+        }
+    </script>
+{{end}}
