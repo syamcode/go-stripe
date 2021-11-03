@@ -39,26 +39,40 @@
         fetch("{{.API}}/api/admin/sales", requestOptions)
         .then(response => response.json())
         .then(data => {
-            console.log(data);
+            if (data) {
+                data.forEach(i => {
+                    let newRow = tbody.insertRow();
+                    let newCell = newRow.insertCell();
 
-            data.forEach(i => {
+                    newCell.innerHTML = `<a href="/admin/sales/${i.id}">Order ${i.id}</a>`;
+
+                    newCell = newRow.insertCell();
+                    let item = document.createTextNode(i.customer.last_name + ", " + i.customer.first_name);
+                    newCell.appendChild(item);
+
+                    newCell = newRow.insertCell();
+                    item = document.createTextNode(i.widget.name);
+                    newCell.appendChild(item);
+
+                    newCell = newRow.insertCell();
+                    item = document.createTextNode(formatCurrency(i.amount));
+                    newCell.appendChild(item);
+                });
+            } else {
                 let newRow = tbody.insertRow();
                 let newCell = newRow.insertCell();
-
-                newCell.innerHTML = `<a href="/admin/sales/${i.id}">Order ${i.id}</a>`;
-
-                newCell = newRow.insertCell();
-                let item = document.createTextNode(i.customer.last_name + ", " + i.customer.first_name);
-                newCell.appendChild(item);
-
-                newCell = newRow.insertCell();
-                item = document.createTextNode(i.widget.name);
-                newCell.appendChild(item);
-
-                newCell = newRow.insertCell();
-                item = document.createTextNode(i.amount);
-                newCell.appendChild(item);
-            })
+                newCell.setAttribute("colspan", "4");
+                newCell.style.textAlign = "center";
+                newCell.innerHTML = "No data available";
+            }
         })
+
+        function formatCurrency(amount) {
+            let c = parseFloat(amount/100);
+            return c.toLocaleString("en-us", {
+                style: "currency",
+                currency: "USD",
+            })
+        }
     </script>
 {{end}}
