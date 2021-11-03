@@ -38,7 +38,7 @@
                 document.getElementById("customer").innerHTML = data.customer.first_name + " " + data.customer.last_name;
                 document.getElementById("product").innerHTML = data.widget.name;
                 document.getElementById("quantity").innerHTML = data.quantity;
-                document.getElementById("amount").innerHTML = formatCurrency(data.amount);
+                document.getElementById("amount").innerHTML = formatCurrency(data.amount) + "/month";
             }
         })
 
