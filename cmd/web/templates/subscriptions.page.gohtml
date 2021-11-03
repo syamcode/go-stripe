@@ -7,7 +7,72 @@
 {{define "content"}}
     <h2 class="mt-3 text-center">Subscriptions</h2>
     <hr>
+
+    <table id="subscriptions-table" class="table table-striped">
+        <thead>
+            <tr>
+                <th>Transaction</th>
+                <th>Customer</th>
+                <th>Product</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
 {{end}}
 
 {{define "js"}}
+    <script>
+        let token = localStorage.getItem("token");
+        let tbody = document.getElementById("subscriptions-table").getElementsByTagName("tbody")[0];
+
+        const requestOptions = {
+            method: 'get',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+            }
+        }
+
+        fetch("{{.API}}/api/admin/subscriptions", requestOptions)
+        .then(response => response.json())
+        .then(data => {
+            if (data) {
+                data.forEach(i => {
+                    let newRow = tbody.insertRow();
+                    let newCell = newRow.insertCell();
+
+                    newCell.innerHTML = `<a href="/admin/subscriptions/${i.id}">Order ${i.id}</a>`;
+
+                    newCell = newRow.insertCell();
+                    let item = document.createTextNode(i.customer.last_name + ", " + i.customer.first_name);
+                    newCell.appendChild(item);
+
+                    newCell = newRow.insertCell();
+                    item = document.createTextNode(i.widget.name);
+                    newCell.appendChild(item);
+
+                    newCell = newRow.insertCell();
+                    item = document.createTextNode(formatCurrency(i.amount) + "/month");
+                    newCell.appendChild(item);
+                });
+            } else {
+                let newRow = tbody.insertRow();
+                let newCell = newRow.insertCell();
+                newCell.setAttribute("colspan", "4");
+                newCell.style.textAlign = "center";
+                newCell.innerHTML = "No data available";
+            }
+        })
+
+        function formatCurrency(amount) {
+            let c = parseFloat(amount/100);
+            return c.toLocaleString("en-us", {
+                style: "currency",
+                currency: "USD",
+            })
+        }
+    </script>
 {{end}}
