@@ -15,6 +15,7 @@
                 <th>Customer</th>
                 <th>Product</th>
                 <th>Amount</th>
+                <th>Status</th>
             </tr>
         </thead>
         <tbody>
@@ -57,6 +58,13 @@
                     newCell = newRow.insertCell();
                     item = document.createTextNode(formatCurrency(i.amount) + "/month");
                     newCell.appendChild(item);
+
+                    newCell = newRow.insertCell();
+                    if (i.status_id != 1) {
+                        newCell.innerHTML = `<span class="badge bg-danger">Cancelled</span>`;
+                    } else {
+                        newCell.innerHTML = `<span class="badge bg-success">Charged</span>`;
+                    }
                 });
             } else {
                 let newRow = tbody.insertRow();

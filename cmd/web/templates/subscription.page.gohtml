@@ -6,7 +6,10 @@
 
 {{define "content"}}
     <h2 class="mt-3 text-center">Subscription</h2>
+    <span id="refunded" class="badge bg-danger d-none">Cancelled</span>
+    <span id="charged" class="badge bg-success d-none">Charged</span>
     <hr>
+    <div class="alert alert-danger text-center d-none" id="messages"></div>
     <p>Order No: <span id="order-no"></span><p>
     <p>Customer Name: <span id="customer"></span><p>
     <p>Product Name: <span id="product"></span><p>
@@ -14,12 +17,16 @@
     <p>Amount: <span id="amount"></span><p>
     <hr>
     <a class="btn btn-info" href="/admin/subscriptions">Cancel</a>
-    <a class="btn btn-warning" href="#!">Refund Order</a>
+    <a id="refund-btn" class="btn btn-warning" href="#!">Cancel Subscription</a>
+
+    <input type="hidden" id="pi" value="">
 {{end}}
 
 {{define "js"}}
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         let token = localStorage.getItem("token");
+        const messages = document.getElementById("messages");
 
         const requestOptions = {
             method: 'get',
@@ -39,8 +46,30 @@
                 document.getElementById("product").innerHTML = data.widget.name;
                 document.getElementById("quantity").innerHTML = data.quantity;
                 document.getElementById("amount").innerHTML = formatCurrency(data.amount) + "/month";
+
+                document.getElementById("pi").value = data.transaction.payment_intent;
+                if (data.status_id === 1) {
+                    document.getElementById("refund-btn").classList.remove("d-none");
+                    document.getElementById("charged").classList.remove("d-none");
+                } else {
+                    document.getElementById("refunded").classList.remove("d-none");
+                }
             }
         })
+
+        function showError(msg) {
+            messages.classList.add("alert-danger");
+            messages.classList.remove("alert-success");
+            messages.classList.remove("d-none");
+            messages.innerText = msg;
+        }
+
+        function showSuccess() {
+            messages.classList.remove("alert-danger");
+            messages.classList.add("alert-success");
+            messages.classList.remove("d-none");
+            messages.innerText = "Subscription cancelled";
+        }
 
         function formatCurrency(amount) {
             let c = parseFloat(amount/100);
@@ -49,5 +78,47 @@
                 currency: "USD",
             })
         }
+
+        document.getElementById("refund-btn").addEventListener("click", function(event) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to undo this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Cancel Subscription'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let payload = {
+                        id: parseInt({{index .IntMap "id"}}),
+                        subscription_id: document.getElementById("pi").value,
+                    }
+
+                    const requestOptions = {
+                        method: 'post',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token,
+                        },
+                        body: JSON.stringify(payload),
+                    }
+
+                    fetch('{{.API}}/api/admin/cancel-subscription', requestOptions)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            showError(data.message);
+                        } else {
+                            showSuccess();
+                            document.getElementById("refund-btn").classList.add("d-none");
+                            document.getElementById("refunded").classList.remove("d-none");
+                            document.getElementById("charged").classList.add("d-none");
+                        }
+                    })
+                }
+            })
+        })
     </script>
 {{end}}
