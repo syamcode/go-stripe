@@ -39,6 +39,7 @@ func (app *application) routes() http.Handler {
 		mux.Get("/subscriptions/{id}", app.ViewSubscription)
 		mux.Post("/refund", app.RefundCharge)
 		mux.Post("/cancel-subscription", app.CancelSubscription)
+		mux.Get("/users", app.Users)
 	})
 	return mux
 }

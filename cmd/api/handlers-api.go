@@ -695,3 +695,13 @@ func (app *application) CancelSubscription(w http.ResponseWriter, r *http.Reques
 
 	app.writeJSON(w, http.StatusOK, resp)
 }
+
+func (app *application) Users(w http.ResponseWriter, r *http.Request) {
+	users, err := app.DB.GetAllUsers()
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	app.writeJSON(w, http.StatusOK, users)
+}
