@@ -21,58 +21,105 @@
         <tbody>
         </tbody>
     </table>
+
+    <nav>
+        <ul class="pagination" id="paginator">
+        </ul>
+    </nav>
 {{end}}
 
 {{define "js"}}
     <script>
         let token = localStorage.getItem("token");
         let tbody = document.getElementById("subscriptions-table").getElementsByTagName("tbody")[0];
+        const pageSize = 10;
 
-        const requestOptions = {
-            method: 'get',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token,
+        function paginator(pages, curPage) {
+            let p = document.getElementById("paginator");
+
+            let html = `<li class="page-item"><a class="page-link pager" href="#!" data-page="${curPage - 1}">&lt;</a></li>`;
+        
+            for (var i=0; i<pages; i++) {
+                if (i + 1 === curPage) {
+                    html += `<li class="page-item active"><a class="page-link pager" href="#!" data-page="${i + 1}" aria-current="page">${i + 1}</a></li>`;
+                
+                } else {
+                    html += `<li class="page-item"><a class="page-link pager" href="#!" data-page="${i + 1}">${i + 1}</a></li>`;
+                }
+            }
+
+            html += `<li class="page-item"><a class="page-link pager" href="#!" data-page="${curPage + 1}">&gt;</a></li>`;
+            p.innerHTML = html;
+
+            let pageButtons = document.getElementsByClassName("pager");
+            for (i = 0; i < pageButtons.length; i++) {
+                pageButtons[i].addEventListener("click", function(event) {
+                    if (event.target.dataset.page > 0 && event.target.dataset.page <= pages) {
+                        updateTable(pageSize, event.target.dataset.page);
+                    }
+                })
             }
         }
 
-        fetch("{{.API}}/api/admin/subscriptions", requestOptions)
-        .then(response => response.json())
-        .then(data => {
-            if (data) {
-                data.forEach(i => {
+        function updateTable(page_size, page) {
+            tbody.innerHTML = "";
+            const payload = {
+                page_size,
+                page,
+            }
+
+            const requestOptions = {
+                method: 'get',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                }
+            }
+
+            fetch("{{.API}}/api/admin/subscriptions?" + new URLSearchParams(payload), requestOptions)
+            .then(response => response.json())
+            .then(response => {
+                data = response.data;
+                if (data) {
+                    data.forEach(i => {
+                        let newRow = tbody.insertRow();
+                        let newCell = newRow.insertCell();
+
+                        newCell.innerHTML = `<a href="/admin/subscriptions/${i.id}">Order ${i.id}</a>`;
+
+                        newCell = newRow.insertCell();
+                        let item = document.createTextNode(i.customer.last_name + ", " + i.customer.first_name);
+                        newCell.appendChild(item);
+
+                        newCell = newRow.insertCell();
+                        item = document.createTextNode(i.widget.name);
+                        newCell.appendChild(item);
+
+                        newCell = newRow.insertCell();
+                        item = document.createTextNode(formatCurrency(i.amount) + "/month");
+                        newCell.appendChild(item);
+
+                        newCell = newRow.insertCell();
+                        if (i.status_id != 1) {
+                            newCell.innerHTML = `<span class="badge bg-danger">Cancelled</span>`;
+                        } else {
+                            newCell.innerHTML = `<span class="badge bg-success">Charged</span>`;
+                        }
+                    });
+                    paginator(response.last_page, response.current_page);
+                } else {
                     let newRow = tbody.insertRow();
                     let newCell = newRow.insertCell();
+                    newCell.setAttribute("colspan", "5");
+                    newCell.style.textAlign = "center";
+                    newCell.innerHTML = "No data available";
+                }
+            })
+        }
 
-                    newCell.innerHTML = `<a href="/admin/subscriptions/${i.id}">Order ${i.id}</a>`;
-
-                    newCell = newRow.insertCell();
-                    let item = document.createTextNode(i.customer.last_name + ", " + i.customer.first_name);
-                    newCell.appendChild(item);
-
-                    newCell = newRow.insertCell();
-                    item = document.createTextNode(i.widget.name);
-                    newCell.appendChild(item);
-
-                    newCell = newRow.insertCell();
-                    item = document.createTextNode(formatCurrency(i.amount) + "/month");
-                    newCell.appendChild(item);
-
-                    newCell = newRow.insertCell();
-                    if (i.status_id != 1) {
-                        newCell.innerHTML = `<span class="badge bg-danger">Cancelled</span>`;
-                    } else {
-                        newCell.innerHTML = `<span class="badge bg-success">Charged</span>`;
-                    }
-                });
-            } else {
-                let newRow = tbody.insertRow();
-                let newCell = newRow.insertCell();
-                newCell.setAttribute("colspan", "5");
-                newCell.style.textAlign = "center";
-                newCell.innerHTML = "No data available";
-            }
+        document.addEventListener("DOMContentLoaded", function() {
+            updateTable(pageSize, 1);
         })
 
         function formatCurrency(amount) {

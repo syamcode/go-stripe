@@ -23,8 +23,8 @@
     </table>
 
     <nav>
-    <ul class="pagination" id="paginator">
-    </ul>
+        <ul class="pagination" id="paginator">
+        </ul>
     </nav>
 {{end}}
 
@@ -32,7 +32,7 @@
     <script>
         let token = localStorage.getItem("token");
         let tbody = document.getElementById("sales-table").getElementsByTagName("tbody")[0];
-        const pageSize = 1;
+        const pageSize = 10;
 
         function paginator(pages, curPage) {
             let p = document.getElementById("paginator");

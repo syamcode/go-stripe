@@ -554,13 +554,35 @@ func (app *application) Sales(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) Subscriptions(w http.ResponseWriter, r *http.Request) {
-	subscriptions, _, _, err := app.DB.GetAllOrders(20, 1, true)
+	pageSizeQuery := r.URL.Query().Get("page_size")
+	pageQuery := r.URL.Query().Get("page")
+
+	pageSize, _ := strconv.Atoi(pageSizeQuery)
+	page, _ := strconv.Atoi(pageQuery)
+
+	subscriptions, lastPage, totalRecords, err := app.DB.GetAllOrders(pageSize, page, true)
 	if err != nil {
 		app.badRequest(w, r, err)
 		return
 	}
 
-	app.writeJSON(w, http.StatusOK, subscriptions)
+	var resp struct {
+		Error        bool           `json:"error"`
+		CurrentPage  int            `json:"current_page"`
+		PageSize     int            `json:"page_size"`
+		TotalRecords int            `json:"total_records"`
+		LastPage     int            `json:"last_page"`
+		Data         []models.Order `json:"data"`
+	}
+
+	resp.Error = false
+	resp.Data = subscriptions
+	resp.TotalRecords = totalRecords
+	resp.LastPage = lastPage
+	resp.CurrentPage = page
+	resp.PageSize = pageSize
+
+	app.writeJSON(w, http.StatusOK, resp)
 }
 
 func (app *application) ViewSale(w http.ResponseWriter, r *http.Request) {
