@@ -408,3 +408,9 @@ func (app *application) ViewSubscriptionPage(w http.ResponseWriter, r *http.Requ
 		app.errorLog.Println(err)
 	}
 }
+
+func (app *application) UsersPage(w http.ResponseWriter, r *http.Request) {
+	if err := app.renderTemplate(w, r, "users", &templateData{}); err != nil {
+		app.errorLog.Println(err)
+	}
+}
