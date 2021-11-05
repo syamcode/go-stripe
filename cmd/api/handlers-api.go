@@ -794,3 +794,24 @@ func (app *application) AddUser(w http.ResponseWriter, r *http.Request) {
 
 	app.writeJSON(w, http.StatusCreated, resp)
 }
+
+func (app *application) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	userID, _ := strconv.Atoi(id)
+
+	err := app.DB.DeleteUser(userID)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	var resp struct {
+		Error   bool   `json:"error"`
+		Message string `json:"message"`
+	}
+
+	resp.Error = false
+	resp.Message = "User deleted"
+
+	app.writeJSON(w, http.StatusOK, resp)
+}
