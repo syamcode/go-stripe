@@ -27,6 +27,40 @@
 
 {{define "js"}}
 <script>
+    let token = localStorage.getItem("token");
     let tbody = document.getElementById("user-table").getElementsByTagName("tbody")[0];
+
+    const requestOptions = {
+        method: 'get',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+        },
+    }
+
+    fetch("{{.API}}/api/admin/users", requestOptions)
+    .then(response => response.json())
+    .then(data => {
+        if (data) {
+            data.forEach(i => {
+                let newRow = tbody.insertRow();
+                let newCell = newRow.insertCell();
+
+                newCell.innerHTML = `<a href="/admin/users/${i.id}">User ${i.id}</a>`;
+
+                newCell = newRow.insertCell();
+                let item = document.createTextNode(i.email);
+                newCell.appendChild(item);
+            });
+            paginator(response.last_page, response.current_page);
+        } else {
+            let newRow = tbody.insertRow();
+            let newCell = newRow.insertCell();
+            newCell.setAttribute("colspan", "2");
+            newCell.style.textAlign = "center";
+            newCell.innerHTML = "No data available";
+        }
+    })
 </script>
 {{end}}
