@@ -792,5 +792,5 @@ func (app *application) AddUser(w http.ResponseWriter, r *http.Request) {
 	resp.Error = false
 	resp.Message = "User created"
 
-	app.writeJSON(w, http.StatusOK, resp)
+	app.writeJSON(w, http.StatusCreated, resp)
 }

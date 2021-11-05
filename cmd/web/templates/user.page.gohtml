@@ -35,16 +35,16 @@
         </div>
 
         <div class="mb-3">
-            <label for="verify_password" class="form-label">Verify Password</label>
-            <input type="password" class="form-control" id="verify_password" name="verify_password"
-                autocomplete="verify_password-new">
+            <label for="confirm_password" class="form-label">Confirm Password</label>
+            <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                autocomplete="confirm_password-new">
         </div>
 
         <hr>
 
         <div class="float-start">
             <a class="btn btn-primary" href="javascript:void(0);" id="saveBtn">Save Changes</a>
-            <a class="btn btn-warning" href="/admin/all-users" id="cancelBtn">Cancel</a>
+            <a class="btn btn-warning" href="/admin/users" id="cancelBtn">Cancel</a>
         </div>
         <div class="float-end">
             <a class="btn btn-danger d-none" href="javascript:void(0);" id="deleteBtn">Delete</a>
@@ -60,6 +60,7 @@
         const token = localStorage.getItem("token");
         const messages = document.getElementById("messages");
         const delBtn = document.getElementById("deleteBtn");
+        const saveBtn = document.getElementById("saveBtn");
 
         if ({{index .IntMap "id"}} !== 0) {
             if ({{index .IntMap "id"}} !== {{.UserID}}) {
@@ -97,6 +98,71 @@
             }).then((result) => {
                 console.log(result);
             })
+        })
+
+        saveBtn.addEventListener("click", function(event) {
+            const form = document.getElementById("user_form");
+            if (form.checkValidity() === false) {
+                this.event.preventDefault();
+                this.event.stopPropagation();
+                form.classList.add("was-validated");
+                return
+            }
+            form.classList.add("was-validated");
+
+            if (document.getElementById("password").value !== document.getElementById("confirm_password").value) {
+                Swal.fire("Passwords do not match");
+                return
+            }
+
+            const payload = {
+                first_name: document.getElementById("first_name").value,
+                last_name: document.getElementById("last_name").value,
+                email: document.getElementById("email").value,
+                password: document.getElementById("password").value,
+            }
+
+            const requestOptions = {
+                method: 'post',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                },
+                body: JSON.stringify(payload),
+            }
+            
+            if ({{index .IntMap "id"}} !== 0) {
+                // Edit User
+                requestOptions.method = "put";
+                fetch('{{.API}}/api/admin/users/{{index .IntMap "id"}}', requestOptions)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        Swal.fire("Error: ", data.message);
+                    } else {
+                        location.href = "/admin/users";
+                    }
+                })
+            } else {
+                // Add User
+
+                if (payload.password === "") {
+                    Swal.fire("Please enter the password");
+                    return
+                }
+
+                fetch('{{.API}}/api/admin/users', requestOptions)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        Swal.fire("Error: ", data.message);
+                    } else {
+                        location.href = "/admin/users";
+                    }
+                })
+            }
+
         })
     </script>
 {{end}}
