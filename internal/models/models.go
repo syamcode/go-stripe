@@ -312,11 +312,13 @@ func (m *DBModel) UpdatePasswordForUser(u User, password string) error {
 	return nil
 }
 
-func (m *DBModel) GetAllOrders(recurring bool) ([]Order, error) {
+func (m *DBModel) GetAllOrders(pageSize, page int, recurring bool) ([]Order, int, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	var orders []Order
+
+	offset := (page - 1) * pageSize
 
 	query := `
 	select
@@ -334,16 +336,18 @@ func (m *DBModel) GetAllOrders(recurring bool) ([]Order, error) {
 		w.is_recurring = ?
 	order by
 		o.created_at desc
+		o.id desc
+	limit ? offset ?
 	`
 
-	is_recurring := 0
+	isRecurring := 0
 	if recurring {
-		is_recurring = 1
+		isRecurring = 1
 	}
 
-	rows, err := m.DB.QueryContext(ctx, query, is_recurring)
+	rows, err := m.DB.QueryContext(ctx, query, isRecurring, pageSize, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, 0, err
 	}
 
 	defer rows.Close()
@@ -377,12 +381,29 @@ func (m *DBModel) GetAllOrders(recurring bool) ([]Order, error) {
 		)
 
 		if err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
 		orders = append(orders, o)
 	}
 
-	return orders, nil
+	query = `
+		select count(o.id)
+		from orders o
+		left join widgets w on (o.widget_id = w.id)
+		where
+		w.is_recurring = ?
+	`
+
+	var totalRecords int
+	countRow := m.DB.QueryRowContext(ctx, query, isRecurring)
+	err = countRow.Scan(&totalRecords)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	lastPage := totalRecords / pageSize
+
+	return orders, lastPage, totalRecords, nil
 }
 
 func (m *DBModel) GetOrderByID(id int) (Order, error) {
