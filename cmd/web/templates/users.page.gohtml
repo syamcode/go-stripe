@@ -47,13 +47,12 @@
                 let newRow = tbody.insertRow();
                 let newCell = newRow.insertCell();
 
-                newCell.innerHTML = `<a href="/admin/users/${i.id}">User ${i.id}</a>`;
+                newCell.innerHTML = `<a href="/admin/users/${i.id}">${i.last_name}, ${i.first_name}</a>`;
 
                 newCell = newRow.insertCell();
                 let item = document.createTextNode(i.email);
                 newCell.appendChild(item);
             });
-            paginator(response.last_page, response.current_page);
         } else {
             let newRow = tbody.insertRow();
             let newCell = newRow.insertCell();

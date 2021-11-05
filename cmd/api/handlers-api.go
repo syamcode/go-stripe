@@ -705,3 +705,15 @@ func (app *application) Users(w http.ResponseWriter, r *http.Request) {
 
 	app.writeJSON(w, http.StatusOK, users)
 }
+
+func (app *application) ViewUser(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	userID, _ := strconv.Atoi(id)
+	user, err := app.DB.GetUser(userID)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	app.writeJSON(w, http.StatusOK, user)
+}

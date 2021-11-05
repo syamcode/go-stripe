@@ -416,7 +416,15 @@ func (app *application) UsersPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) ViewUserPage(w http.ResponseWriter, r *http.Request) {
-	if err := app.renderTemplate(w, r, "user", &templateData{}); err != nil {
+	id := chi.URLParam(r, "id")
+	userID, _ := strconv.Atoi(id)
+
+	intMap := make(map[string]int)
+	intMap["id"] = userID
+
+	if err := app.renderTemplate(w, r, "user", &templateData{
+		IntMap: intMap,
+	}); err != nil {
 		app.errorLog.Println(err)
 	}
 }

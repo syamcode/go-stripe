@@ -7,7 +7,94 @@
 {{define "content"}}
     <h2 class="mt-3 text-center">User</h2>
     <hr>
+    <form method="post" action="" name="user_form" id="user_form"
+    class="needs-validation" autocomplete="off" novalidate="">
+
+        <div class="mb-3">
+            <label for="first_name" class="form-label">First Name</label>
+            <input type="text" class="form-control" id="first_name" name="first_name"
+                required="" autocomplete="first_name-new">
+        </div>
+
+        <div class="mb-3">
+            <label for="last_name" class="form-label">Last Name</label>
+            <input type="text" class="form-control" id="last_name" name="last_name"
+                required="" autocomplete="last_name-new">
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email"
+                required="" autocomplete="email-new">
+        </div>
+
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" name="password"
+                autocomplete="password-new">
+        </div>
+
+        <div class="mb-3">
+            <label for="verify_password" class="form-label">Verify Password</label>
+            <input type="password" class="form-control" id="verify_password" name="verify_password"
+                autocomplete="verify_password-new">
+        </div>
+
+        <hr>
+
+        <div class="float-start">
+            <a class="btn btn-primary" href="javascript:void(0);" id="saveBtn">Save Changes</a>
+            <a class="btn btn-warning" href="/admin/all-users" id="cancelBtn">Cancel</a>
+        </div>
+        <div class="float-end">
+            <a class="btn btn-danger d-none" href="javascript:void(0);" id="deleteBtn">Delete</a>
+        </div>
+
+        <div class="clearfix"></div>
+    </form>
 {{end}}
 
 {{define "js"}}
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const token = localStorage.getItem("token");
+        const messages = document.getElementById("messages");
+        const delBtn = document.getElementById("deleteBtn");
+
+        if ({{index .IntMap "id"}} !== 0) {
+            delBtn.classList.remove("d-none");
+            const requestOptions = {
+                method: 'get',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                }
+            }
+
+            fetch('{{.API}}/api/admin/users/{{index .IntMap "id"}}', requestOptions)
+            .then(response => response.json())
+            .then(data => {
+                if (data) {
+                    document.getElementById("first_name").value = data.first_name;
+                    document.getElementById("last_name").value = data.last_name;
+                    document.getElementById("email").value = data.email;
+                }
+            })
+        }
+
+        delBtn.addEventListener("click", function(event) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to undo this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Delete User'
+            }).then((result) => {
+                console.log(result);
+            })
+        })
+    </script>
 {{end}}
