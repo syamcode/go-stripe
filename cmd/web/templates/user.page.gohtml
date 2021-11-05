@@ -62,7 +62,9 @@
         const delBtn = document.getElementById("deleteBtn");
 
         if ({{index .IntMap "id"}} !== 0) {
-            delBtn.classList.remove("d-none");
+            if ({{index .IntMap "id"}} !== {{.UserID}}) {
+                delBtn.classList.remove("d-none");
+            }
             const requestOptions = {
                 method: 'get',
                 headers: {
