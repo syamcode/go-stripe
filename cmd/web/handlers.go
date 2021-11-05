@@ -414,3 +414,9 @@ func (app *application) UsersPage(w http.ResponseWriter, r *http.Request) {
 		app.errorLog.Println(err)
 	}
 }
+
+func (app *application) ViewUserPage(w http.ResponseWriter, r *http.Request) {
+	if err := app.renderTemplate(w, r, "user", &templateData{}); err != nil {
+		app.errorLog.Println(err)
+	}
+}
