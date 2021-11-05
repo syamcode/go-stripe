@@ -717,3 +717,80 @@ func (app *application) ViewUser(w http.ResponseWriter, r *http.Request) {
 
 	app.writeJSON(w, http.StatusOK, user)
 }
+
+func (app *application) EditUser(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	userID, _ := strconv.Atoi(id)
+
+	var u models.User
+	err := app.readJSON(w, r, &u)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	u.ID = userID
+
+	err = app.DB.EditUser(u)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	if u.Password != "" {
+		newHash, err := bcrypt.GenerateFromPassword([]byte(u.Password), 12)
+		if err != nil {
+			app.badRequest(w, r, err)
+			return
+		}
+
+		err = app.DB.UpdatePasswordForUser(u, string(newHash))
+		if err != nil {
+			app.badRequest(w, r, err)
+			return
+		}
+	}
+
+	var resp struct {
+		Error   bool   `json:"error"`
+		Message string `json:"message"`
+	}
+
+	resp.Error = false
+	resp.Message = "Edit user success"
+
+	app.writeJSON(w, http.StatusOK, resp)
+}
+
+func (app *application) AddUser(w http.ResponseWriter, r *http.Request) {
+	var u models.User
+	err := app.readJSON(w, r, &u)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	newHash, err := bcrypt.GenerateFromPassword([]byte(u.Password), 12)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	u.Password = string(newHash)
+
+	_, err = app.DB.AddUser(u)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	var resp struct {
+		Error   bool   `json:"error"`
+		Message string `json:"message"`
+	}
+
+	resp.Error = false
+	resp.Message = "User created"
+
+	app.writeJSON(w, http.StatusOK, resp)
+}
