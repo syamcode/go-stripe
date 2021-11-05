@@ -28,18 +28,24 @@
         let token = localStorage.getItem("token");
         let tbody = document.getElementById("sales-table").getElementsByTagName("tbody")[0];
 
+        const payload = {
+            page_size: 10,
+            page: 1,
+        }
+        
         const requestOptions = {
             method: 'get',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + token,
-            }
+            },
         }
 
-        fetch("{{.API}}/api/admin/sales", requestOptions)
+        fetch("{{.API}}/api/admin/sales?" + new URLSearchParams(payload), requestOptions)
         .then(response => response.json())
-        .then(data => {
+        .then(response => {
+            data = response.data;
             if (data) {
                 data.forEach(i => {
                     let newRow = tbody.insertRow();
@@ -69,7 +75,7 @@
             } else {
                 let newRow = tbody.insertRow();
                 let newCell = newRow.insertCell();
-                newCell.setAttribute("colspan", "4");
+                newCell.setAttribute("colspan", "5");
                 newCell.style.textAlign = "center";
                 newCell.innerHTML = "No data available";
             }

@@ -335,7 +335,7 @@ func (m *DBModel) GetAllOrders(pageSize, page int, recurring bool) ([]Order, int
 	where
 		w.is_recurring = ?
 	order by
-		o.created_at desc
+		o.created_at desc,
 		o.id desc
 	limit ? offset ?
 	`

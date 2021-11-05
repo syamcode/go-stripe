@@ -522,13 +522,35 @@ func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) Sales(w http.ResponseWriter, r *http.Request) {
-	sales, _, _, err := app.DB.GetAllOrders(20, 1, false)
+	pageSizeQuery := r.URL.Query().Get("page_size")
+	pageQuery := r.URL.Query().Get("page")
+
+	pageSize, _ := strconv.Atoi(pageSizeQuery)
+	page, _ := strconv.Atoi(pageQuery)
+
+	sales, lastPage, totalRecords, err := app.DB.GetAllOrders(pageSize, page, false)
 	if err != nil {
 		app.badRequest(w, r, err)
 		return
 	}
 
-	app.writeJSON(w, http.StatusOK, sales)
+	var resp struct {
+		Error        bool           `json:"error"`
+		CurrentPage  int            `json:"current_page"`
+		PageSize     int            `json:"page_size"`
+		TotalRecords int            `json:"total_records"`
+		LastPage     int            `json:"last_page"`
+		Data         []models.Order `json:"data"`
+	}
+
+	resp.Error = false
+	resp.Data = sales
+	resp.TotalRecords = totalRecords
+	resp.LastPage = lastPage
+	resp.CurrentPage = page
+	resp.PageSize = pageSize
+
+	app.writeJSON(w, http.StatusOK, resp)
 }
 
 func (app *application) Subscriptions(w http.ResponseWriter, r *http.Request) {
