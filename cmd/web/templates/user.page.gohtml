@@ -112,6 +112,13 @@
                         if (data.error) {
                             Swal.fire("Error: ", data.message);
                         } else {
+                            const payload = {
+                                action: "deleteUser",
+                                user_id: parseInt({{index .IntMap "id"}}),
+                            }
+
+                            socket.send(JSON.stringify(payload));
+
                             location.href = "/admin/users";
                         }
                     })
