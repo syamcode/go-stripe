@@ -11,6 +11,8 @@ func (app *application) routes() http.Handler {
 	mux.Use(SessionLoad)
 
 	mux.Get("/", app.Home)
+	mux.Get("/ws", app.WsEndpoint)
+
 	mux.Route("/admin", func(mux chi.Router) {
 		mux.Use(app.Auth)
 
