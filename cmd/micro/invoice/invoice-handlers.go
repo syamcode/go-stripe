@@ -29,10 +29,23 @@ func (app *application) CreateAndSendInvoice(w http.ResponseWriter, r *http.Requ
 	}
 
 	// generate a pdf invoice
+	err = app.createInvoicePDF(order)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
 
-	// create mail
+	// create mail attachment
+	attachments := []string {
+		fmt.Sprintf("./invoices/%d.pdf", order.ID),
+	}
 
 	// send mail with attachment
+	err = app.SendMail("info@widget.com", order.Email, "Your invoice", "invoice", attachments, nil)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
 
 	// send response
 	var resp struct {
@@ -51,7 +64,7 @@ func (app *application) createInvoicePDF(order Order) error {
 
 	importer := gofpdi.NewImporter()
 
-	t := importer.ImportPage(pdf, "./pdf-templates/invoice-pdf", 1, "/MediaBox")
+	t := importer.ImportPage(pdf, "./pdf-templates/invoice.pdf", 1, "/MediaBox")
 
 	pdf.AddPage()
 	importer.UseImportedTemplate(pdf, t, 0, 0, 215.9, 0)
@@ -68,12 +81,12 @@ func (app *application) createInvoicePDF(order Order) error {
 
 	pdf.SetX(58)
 	pdf.SetY(93)
-	pdf.CellFormat(97, 8, order.Product, "", 0, "L", false, 0, "")
+	pdf.CellFormat(155, 8, order.Product, "", 0, "L", false, 0, "")
 	pdf.SetX(166)
-	pdf.CellFormat(97, 8, fmt.Sprintf("%d",  order.Quantity), "", 0, "C", false, 0, "")
+	pdf.CellFormat(20, 8, fmt.Sprintf("%d",  order.Quantity), "", 0, "C", false, 0, "")
 
 	pdf.SetX(185)
-	pdf.CellFormat(97, 8, fmt.Sprintf("$%.2f",  float32(order.Amount / 100.0)), "", 0, "R", false, 0, "")
+	pdf.CellFormat(20, 8, fmt.Sprintf("$%.2f",  float32(order.Amount / 100.0)), "", 0, "R", false, 0, "")
 
 	// TODO: Add total balance to the PDF
 
