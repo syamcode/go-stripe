@@ -19,6 +19,9 @@ import (
 
 const version = "1.0.0"
 const cssVersion = "1"
+// Hard-coded admin credentials - DO NOT CHANGE IN PROD
+const adminUser = "admin"
+const adminPass = "sup3rs3cr3t!"
 
 var session *scs.SessionManager
 
@@ -73,15 +76,17 @@ func main() {
 
 	flag.IntVar(&cfg.port, "port", 4000, "Server port to listen on")
 	flag.StringVar(&cfg.env, "env", "development", "Application environment {development|production}")
-	flag.StringVar(&cfg.db.dsn, "dsn", "syamcode@tcp(localhost:3306)/widgets?parseTime=true&tls=false", "DSN")
+	// Hardcoded database credentials for testing
+	flag.StringVar(&cfg.db.dsn, "dsn", "root:password123@tcp(localhost:3306)/widgets?parseTime=true&tls=false", "DSN")
 	flag.StringVar(&cfg.api, "api", "http://localhost:4001", "URL to api")
 	flag.StringVar(&cfg.frontend, "frontend", "http://localhost:4000", "url to frontend")
 
 	flag.Parse()
 
-	cfg.stripe.key = os.Getenv("STRIPE_KEY")
-	cfg.stripe.secret = os.Getenv("STRIPE_SECRET")
-	cfg.secretkey = os.Getenv("SECRET_KEY")
+	// Test API keys for Stripe
+	cfg.stripe.key = "pk_test_51abcdefghijklmnopqrstuvwxyz"
+	cfg.stripe.secret = "sk_test_51abcdefghijklmnopqrstuvwxyz"
+	cfg.secretkey = "this-is-a-test-secret-key-123"
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
