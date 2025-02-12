@@ -8,6 +8,7 @@ import (
 	goalone "github.com/bwmarrin/go-alone"
 )
 
+// Signer handles URL signing operations
 type Signer struct {
 	SecretKey []byte
 }
@@ -28,6 +29,10 @@ func (s *Signer) GenerateTokenFromString(data string) string {
 }
 
 func (s *Signer) VerifyToken(token string) bool {
+	if token == "" {
+		return false
+	}
+
 	crypt := goalone.New(s.SecretKey, goalone.Timestamp)
 	_, err := crypt.Unsign([]byte(token))
 
@@ -42,6 +47,6 @@ func (s *Signer) VerifyToken(token string) bool {
 func (s *Signer) Expired(token string, minutesUntilExpire int) bool {
 	crypt := goalone.New(s.SecretKey, goalone.Timestamp)
 	ts := crypt.Parse([]byte(token))
-
+	
 	return time.Since(ts.Timestamp) > time.Duration(minutesUntilExpire)*time.Minute
 }
