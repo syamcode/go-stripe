@@ -5,18 +5,60 @@
 <head>
     <meta name="viewport" content="width=device-width" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .footer {
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .logo {
+            font-weight: bold;
+            font-size: 24px;
+            color: #2c3e50;
+        }
+    </style>
 </head>
 
 <body>
-    <p>Hello:</p>
-    <p>Please find your invoice attached.</p>
+    <div class="header">
+        <div class="logo">Widgets Co.</div>
+    </div>
 
-    <br>
-    <p>--<br>
-    Widgets Co.
-    </p>
+    <div class="content">
+        <p>Hello,</p>
+        <p>Thank you for your purchase! Your invoice has been generated and is attached to this email.</p>
+        <p>If you have any questions about your invoice, please don't hesitate to contact our support team.</p>
+    </div>
+
+    <div class="footer">
+        <p>Best regards,<br>
+        The Widgets Co. Team</p>
+        
+        <p style="font-size: 12px; color: #999;">
+            This is an automated message. Please do not reply directly to this email.
+        </p>
+    </div>
 </body>
 
 </html>
-
 {{end}}
