@@ -13,15 +13,20 @@ import (
 	"github.com/syamcode/go-stripe/internal/urlsigner"
 )
 
+// renderError is a helper to log and render template errors
+func (app *application) renderError(w http.ResponseWriter, r *http.Request, tmpl string, td *templateData, err error) {
+	app.errorLog.Println(err)
+}
+
 func (app *application) Home(w http.ResponseWriter, r *http.Request) {
 	if err := app.renderTemplate(w, r, "home", &templateData{}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "home", &templateData{}, err)
 	}
 }
 
 func (app *application) VirtualTerminal(w http.ResponseWriter, r *http.Request) {
 	if err := app.renderTemplate(w, r, "terminal", &templateData{}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "terminal", &templateData{}, err)
 	}
 }
 
@@ -41,56 +46,46 @@ type TransactionData struct {
 }
 
 // GetTransactionData gets transaction data from post and stripe
-func (app *application) GetTransactionData(r *http.Request) (txnData TransactionData, err error) {
-	err = r.ParseForm()
-	if err != nil {
-		app.errorLog.Println(err)
-		return txnData, err
+func (app *application) GetTransactionData(r *http.Request) (TransactionData, error) {
+	var txnData TransactionData
+
+	if err := r.ParseForm(); err != nil {
+		return txnData, fmt.Errorf("error parsing form: %w", err)
 	}
 
 	// read posted data
-	firstName := r.Form.Get("first_name")
-	lastName := r.Form.Get("last_name")
-	email := r.Form.Get("cardholder_email")
-	paymentIntent := r.Form.Get("payment_intent")
-	paymentMethod := r.Form.Get("payment_method")
+	txnData = TransactionData{
+		FirstName:       r.Form.Get("first_name"),
+		LastName:        r.Form.Get("last_name"), 
+		Email:           r.Form.Get("cardholder_email"),
+		PaymentIntentID: r.Form.Get("payment_intent"),
+		PaymentMethodID: r.Form.Get("payment_method"),
+		PaymentCurrency: r.Form.Get("payment_currency"),
+	}
+
 	paymentAmount, _ := strconv.Atoi(r.Form.Get("payment_amount"))
-	paymentCurrency := r.Form.Get("payment_currency")
+	txnData.PaymentAmount = paymentAmount
 
 	card := cards.Card{
 		Secret: app.config.stripe.secret,
 		Key:    app.config.stripe.key,
 	}
 
-	pi, err := card.RetrievePaymentIntent(paymentIntent)
+	pi, err := card.RetrievePaymentIntent(txnData.PaymentIntentID)
 	if err != nil {
-		app.errorLog.Println(err)
-		return txnData, err
+		return txnData, fmt.Errorf("error getting payment intent: %w", err)
 	}
 
-	pm, err := card.GetPaymentMethod(paymentMethod)
+	pm, err := card.GetPaymentMethod(txnData.PaymentMethodID)
 	if err != nil {
-		app.errorLog.Println(err)
-		return txnData, err
+		return txnData, fmt.Errorf("error getting payment method: %w", err)
 	}
 
-	lastFour := pm.Card.Last4
-	expiryMonth := pm.Card.ExpMonth
-	expiryYear := pm.Card.ExpYear
+	txnData.LastFour = pm.Card.Last4
+	txnData.ExpiryMonth = int(pm.Card.ExpMonth)
+	txnData.ExpiryYear = int(pm.Card.ExpYear)
+	txnData.BankReturnCode = pi.Charges.Data[0].ID
 
-	txnData = TransactionData{
-		FirstName:       firstName,
-		LastName:        lastName,
-		Email:           email,
-		PaymentIntentID: paymentIntent,
-		PaymentMethodID: paymentMethod,
-		PaymentAmount:   paymentAmount,
-		PaymentCurrency: paymentCurrency,
-		LastFour:        lastFour,
-		BankReturnCode:  pi.Charges.Data[0].ID,
-		ExpiryMonth:     int(expiryMonth),
-		ExpiryYear:      int(expiryYear),
-	}
 	return txnData, nil
 }
 
@@ -114,8 +109,7 @@ func (app *application) VirtualTerminalPaymentSucceeded(w http.ResponseWriter, r
 		TransactionStatusID: 2,
 	}
 
-	_, err = app.SaveTransaction(txn)
-	if err != nil {
+	if _, err = app.SaveTransaction(txn); err != nil {
 		app.errorLog.Println(err)
 		return
 	}
@@ -128,16 +122,16 @@ func (app *application) VirtualTerminalReceipt(w http.ResponseWriter, r *http.Re
 	txn := app.Session.Get(r.Context(), "receipt").(TransactionData)
 	data := map[string]interface{}{"txn": txn}
 	app.Session.Remove(r.Context(), "receipt")
+	
 	if err := app.renderTemplate(w, r, "virtual-terminal-receipt", &templateData{
 		Data: data,
 	}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "virtual-terminal-receipt", &templateData{Data: data}, err)
 	}
 }
 
 func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
+	if err := r.ParseForm(); err != nil {
 		app.errorLog.Println(err)
 		return
 	}
@@ -188,8 +182,7 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 		UpdatedAt:     time.Now(),
 	}
 
-	_, err = app.SaveOrder(order)
-	if err != nil {
+	if _, err = app.SaveOrder(order); err != nil {
 		app.errorLog.Println(err)
 		return
 	}
@@ -202,10 +195,11 @@ func (app *application) Receipt(w http.ResponseWriter, r *http.Request) {
 	txn := app.Session.Get(r.Context(), "receipt").(TransactionData)
 	data := map[string]interface{}{"txn": txn}
 	app.Session.Remove(r.Context(), "receipt")
+	
 	if err := app.renderTemplate(w, r, "receipt", &templateData{
 		Data: data,
 	}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "receipt", &templateData{Data: data}, err)
 	}
 }
 
@@ -217,29 +211,17 @@ func (app *application) SaveCustomer(firstName, lastName, email string) (int, er
 		Email:     email,
 	}
 
-	id, err := app.DB.InsertCustomer(customer)
-	if err != nil {
-		return 0, err
-	}
-	return id, nil
+	return app.DB.InsertCustomer(customer)
 }
 
 // SaveTransaction saves a transaction and returns id
 func (app *application) SaveTransaction(txn models.Transaction) (int, error) {
-	id, err := app.DB.InsertTransaction(txn)
-	if err != nil {
-		return 0, err
-	}
-	return id, nil
+	return app.DB.InsertTransaction(txn)
 }
 
 // SaveOrder saves an order and returns id
 func (app *application) SaveOrder(order models.Order) (int, error) {
-	id, err := app.DB.InsertOrder(order)
-	if err != nil {
-		return 0, err
-	}
-	return id, nil
+	return app.DB.InsertOrder(order)
 }
 
 // ChargeOnce displays the page to buy one widget
@@ -253,13 +235,12 @@ func (app *application) ChargeOnce(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := make(map[string]interface{})
-	data["widget"] = widget
+	data := map[string]interface{}{"widget": widget}
 
 	if err := app.renderTemplate(w, r, "buy-once", &templateData{
 		Data: data,
 	}, "stripe-js"); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "buy-once", &templateData{Data: data}, err)
 	}
 }
 
@@ -267,36 +248,35 @@ func (app *application) BronzePlan(w http.ResponseWriter, r *http.Request) {
 	widget, err := app.DB.GetWidget(2)
 	if err != nil {
 		app.errorLog.Println(err)
+		return
 	}
 
-	data := make(map[string]interface{})
-	data["widget"] = widget
+	data := map[string]interface{}{"widget": widget}
 
 	if err := app.renderTemplate(w, r, "bronze-plan", &templateData{
 		Data: data,
 	}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "bronze-plan", &templateData{Data: data}, err)
 	}
 }
 
 func (app *application) BronzePlanReceipt(w http.ResponseWriter, r *http.Request) {
 	if err := app.renderTemplate(w, r, "bronze-plan-receipt", &templateData{}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "bronze-plan-receipt", &templateData{}, err)
 	}
 }
 
 //LoginPage displays the login page
 func (app *application) LoginPage(w http.ResponseWriter, r *http.Request) {
 	if err := app.renderTemplate(w, r, "login", &templateData{}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "login", &templateData{}, err)
 	}
 }
 
 func (app *application) PostLoginPage(w http.ResponseWriter, r *http.Request) {
 	app.Session.RenewToken(r.Context())
 
-	err := r.ParseForm()
-	if err != nil {
+	if err := r.ParseForm(); err != nil {
 		app.errorLog.Println(err)
 		return
 	}
@@ -322,7 +302,7 @@ func (app *application) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if err := app.renderTemplate(w, r, "forgot-password", &templateData{}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "forgot-password", &templateData{}, err)
 	}
 }
 
@@ -335,16 +315,12 @@ func (app *application) ResetPasswordPage(w http.ResponseWriter, r *http.Request
 		SecretKey: []byte(app.config.secretkey),
 	}
 
-	valid := signer.VerifyToken(testURL)
-
-	if !valid {
+	if !signer.VerifyToken(testURL) {
 		w.Write([]byte("Invalid url - tampering detected"))
 		return
 	}
 
-	// make sure not expired
-	expired := signer.Expired(testURL, 60)
-	if expired {
+	if signer.Expired(testURL, 60) {
 		app.errorLog.Println("Link expired")
 		return
 	}
@@ -359,25 +335,24 @@ func (app *application) ResetPasswordPage(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	data := make(map[string]interface{})
-	data["email"] = encryptedEmail
+	data := map[string]interface{}{"email": encryptedEmail}
 
 	if err := app.renderTemplate(w, r, "reset-password", &templateData{
 		Data: data,
 	}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "reset-password", &templateData{Data: data}, err)
 	}
 }
 
 func (app *application) SalesPage(w http.ResponseWriter, r *http.Request) {
 	if err := app.renderTemplate(w, r, "sales", &templateData{}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "sales", &templateData{}, err)
 	}
 }
 
 func (app *application) SubscriptionsPage(w http.ResponseWriter, r *http.Request) {
 	if err := app.renderTemplate(w, r, "subscriptions", &templateData{}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "subscriptions", &templateData{}, err)
 	}
 }
 
@@ -385,13 +360,12 @@ func (app *application) ViewSalePage(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	orderID, _ := strconv.Atoi(id)
 
-	intMap := make(map[string]int)
-	intMap["id"] = orderID
+	intMap := map[string]int{"id": orderID}
 
 	if err := app.renderTemplate(w, r, "sale", &templateData{
 		IntMap: intMap,
 	}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "sale", &templateData{IntMap: intMap}, err)
 	}
 }
 
@@ -399,19 +373,18 @@ func (app *application) ViewSubscriptionPage(w http.ResponseWriter, r *http.Requ
 	id := chi.URLParam(r, "id")
 	orderID, _ := strconv.Atoi(id)
 
-	intMap := make(map[string]int)
-	intMap["id"] = orderID
+	intMap := map[string]int{"id": orderID}
 
 	if err := app.renderTemplate(w, r, "subscription", &templateData{
 		IntMap: intMap,
 	}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "subscription", &templateData{IntMap: intMap}, err)
 	}
 }
 
 func (app *application) UsersPage(w http.ResponseWriter, r *http.Request) {
 	if err := app.renderTemplate(w, r, "users", &templateData{}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "users", &templateData{}, err)
 	}
 }
 
@@ -419,12 +392,11 @@ func (app *application) ViewUserPage(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	userID, _ := strconv.Atoi(id)
 
-	intMap := make(map[string]int)
-	intMap["id"] = userID
+	intMap := map[string]int{"id": userID}
 
 	if err := app.renderTemplate(w, r, "user", &templateData{
 		IntMap: intMap,
 	}); err != nil {
-		app.errorLog.Println(err)
+		app.renderError(w, r, "user", &templateData{IntMap: intMap}, err)
 	}
 }
